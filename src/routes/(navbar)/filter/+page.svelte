@@ -96,7 +96,7 @@
                 <tbody>
                     {#each files as file}
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                            <td>
+                            <td class="ps-2">
                                 {file.name}
                             </td>
                             <td class="px-6 py-4">
