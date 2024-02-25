@@ -8,11 +8,12 @@
 
   let email = "";
   let password = "";
+  let userid = $page.data.session?.user?.name;
   common_fetch(
     "/api/files/getpersonalfiles_extension",
     {
       given_file_extension: "pdf",
-      given_userid: '8f692dfb-a618-4050-9c47-07b5c51bae91'
+      given_userid: userid
     },
     async (response: Response): Promise<void> => {
       let response_obj = await response.json();
