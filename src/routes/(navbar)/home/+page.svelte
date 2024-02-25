@@ -514,6 +514,8 @@
                     file_id={file.id}
                     file_name={file.name}
                     file_type={file.type}
+                    file_size=test
+                    file_date={Date.now().toString()}
                   />
                 </li>
               {/each}

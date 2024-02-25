@@ -4,6 +4,8 @@
     export let file_id: string;
     export let file_name: string;
     export let file_type: string;
+    export let file_date: string;
+    export let file_size: string;
     const all_colors: string[] = ["red", "green", "blue", "purple"];
     let color: string;
 
@@ -37,7 +39,13 @@
                 {file_name}
             </p>
             <p class="text-base text-gray-500 dark:text-gray-400">
-                {file_type.toUpperCase()}
+                {file_type}
+            </p>
+            <p class="text-base text-gray-500 dark:text-gray-400">
+                {file_size}
+            </p>
+            <p class="text-base text-gray-500 dark:text-gray-400">
+                {file_date}
             </p>
         </div>
     </div>                  

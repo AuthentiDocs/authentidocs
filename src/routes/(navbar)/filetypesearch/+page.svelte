@@ -9,6 +9,8 @@
     public id!: string;
     public name!: string;
     public type!: string;
+    public fsize!: string;
+    public fdate!: string;
   }
   let personal_files: File[] = new Array(0);
   $: personal_files_length = personal_files.length;
@@ -34,7 +36,9 @@
           personal_files[i] = new File();
           personal_files[i].id = response_obj[i].f_fileid;
           personal_files[i].name = response_obj[i].f_filename;
-          personal_files[i].type = response_obj[i].f_file_extension;
+          
+          personal_files[i].fdate = response_obj[i].f_created_at;
+          personal_files[i].fsize = "10 Mb";
         }
       }
     );
@@ -61,6 +65,9 @@
           personal_files[i].id = response_obj[i].f_fileid;
           personal_files[i].name = response_obj[i].f_filename;
           personal_files[i].type = response_obj[i].f_file_extension;
+          personal_files[i].fdate = response_obj[i].f_created_at;
+          personal_files[i].fsize = "10 Mb";
+        
         }
       }
     );
@@ -87,6 +94,9 @@
           personal_files[i].id = response_obj[i].f_fileid;
           personal_files[i].name = response_obj[i].f_filename;
           personal_files[i].type = response_obj[i].f_file_extension;
+          personal_files[i].fdate = response_obj[i].f_created_at;
+          personal_files[i].fsize = "10 Mb";
+        
         }
       }
     );
@@ -113,6 +123,9 @@
           personal_files[i].id = response_obj[i].f_fileid;
           personal_files[i].name = response_obj[i].f_filename;
           personal_files[i].type = response_obj[i].f_file_extension;
+          personal_files[i].fdate = response_obj[i].f_created_at;
+          personal_files[i].fsize = "10 Mb";
+        
         }
       }
     );
@@ -121,30 +134,29 @@
   onMount((): void => {});
 </script>
 
+<svelte:head>
+  <title>File Type Search</title>
+</svelte:head>
+
 <div class="notice-root">
   <div
     class="notice-root-card block p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
   >
-    <h1 > <center><b> User File Extension Search</b> </center></h1>
+    <h1><center><b> User File Extension Search</b> </center></h1>
     <div class="flex content-center">
       <Button>Select File Extension</Button>
       <Dropdown>
-        <DropdownItem
-          ><Button on:click={pdf_search}>Pdfs</Button>
-        </DropdownItem>
-        <DropdownItem
-          ><Button on:click={text_search}>Text</Button></DropdownItem
+        <DropdownItem><Button on:click={pdf_search}>PDF</Button></DropdownItem>
+        <DropdownItem><Button on:click={text_search}>Text</Button></DropdownItem
         >
+        <DropdownItem><Button on:click={csv_search}>CSV</Button></DropdownItem>
         <DropdownItem
-          ><Button on:click={csv_search}>CSVs</Button></DropdownItem
-        >
-        <DropdownItem
-          ><Button on:click={other_search}>Others</Button></DropdownItem
+          ><Button on:click={other_search}>All Types</Button></DropdownItem
         >
       </Dropdown>
     </div>
     <div class="notice-message">
-      <p class="text-gray-700 dark:text-gray-200 mb-4 align-middle "></p>
+      <p class="text-gray-700 dark:text-gray-200 mb-4 align-middle"></p>
     </div>
     <div class="list-container m-6">
       {#if personal_files_length > 0}
@@ -155,6 +167,8 @@
                 file_id={file.id}
                 file_name={file.name}
                 file_type={file.type}
+                file_size={file.fsize}
+                file_date={file.fdate}
               />
             </li>
           {/each}
