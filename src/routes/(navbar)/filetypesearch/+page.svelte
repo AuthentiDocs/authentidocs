@@ -125,8 +125,9 @@
   <div
     class="notice-root-card block p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
   >
-    <div class="list-item">
-      <Button>Dropdown button</Button>
+    <h1 > <center><b> User File Extension Search</b> </center></h1>
+    <div class="flex content-center">
+      <Button>Select File Extension</Button>
       <Dropdown>
         <DropdownItem
           ><Button on:click={pdf_search}>Pdfs</Button>
@@ -143,7 +144,7 @@
       </Dropdown>
     </div>
     <div class="notice-message">
-      <p class="text-gray-700 dark:text-gray-200 mb-4">Files</p>
+      <p class="text-gray-700 dark:text-gray-200 mb-4 align-middle "></p>
     </div>
     <div class="list-container m-6">
       {#if personal_files_length > 0}
