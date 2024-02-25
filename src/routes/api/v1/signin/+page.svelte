@@ -9,10 +9,10 @@
   let email = "";
   let password = "";
   common_fetch(
-    "/api/user/verifykey",
+    "/api/files/getpersonalfiles_extension",
     {
-      key: '{"crv":"P-384","ext":true,"key_ops":["verify"],"kty":"EC","x":"tqfv0VW2jMAzcB2xVgdnY7cHZh5eXnd2VaEIzwEHYjShWJRPHITl4TRsElOZ8Hbn","y":"5taflozhKRG8-ao2MhjTMODXzfgagNRoAvEjh35HtIWZg1hlRdf-w9kQf7cHjXYH"}',
-      orgid: "8137193e-876c-4c05-9768-b8a11cee9b14",
+      given_file_extension: "pdf",
+      given_userid: '8f692dfb-a618-4050-9c47-07b5c51bae91'
     },
     async (response: Response): Promise<void> => {
       let response_obj = await response.json();
