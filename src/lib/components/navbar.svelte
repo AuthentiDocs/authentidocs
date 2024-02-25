@@ -189,6 +189,7 @@
         <span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white">Authentidocs</span>
     </NavBrand>
     <NavUl>
+        <NavLi href="/filter">Filter</NavLi>
         <NavLi href="/">Files</NavLi>
         <NavLi href="/about">Organizations</NavLi>
         <NavLi href="/docs/components/navbar">Teams</NavLi>
