@@ -78,6 +78,8 @@
     public id!: string;
     public name!: string;
     public type!: string;
+    public upload_date!: Date;
+    public size!: number;
   }
 
   let personal_files: File[] = new Array(0);
@@ -168,6 +170,40 @@
           personal_files[i].id = response_obj[i].f_fileid;
           personal_files[i].name = response_obj[i].f_filename;
           personal_files[i].type = response_obj[i].f_file_extension;
+          personal_files[i].upload_date = response_obj[i].f_created_at;
+        }
+
+        personal_files_loading = false;
+      }
+    );
+  }
+  let selected_file_type = ''
+
+  function get_personal_files_filtered(): void {
+    personal_files_loading = true;
+    let request_obj: any = {
+      given_userid: $page.data.session?.user?.name,
+      file_ext: selected_file_type,
+    };
+
+    common_fetch(
+      "/api/files/getpersonalfilesfilter",
+      request_obj,
+      async (response: Response): Promise<void> => {
+        let response_obj: any = await response.json();
+        console.log(response_obj);
+        personal_files = [];
+
+        if (response_obj === null) {
+          return;
+        }
+
+        for (let i: number = 0; i < response_obj.length; ++i) {
+          personal_files[i] = new File();
+          personal_files[i].id = response_obj[i].f_fileid;
+          personal_files[i].name = response_obj[i].f_filename;
+          personal_files[i].type = response_obj[i].f_file_extension;
+          personal_files[i].upload_date = response_obj[i].f_created_at;
         }
 
         personal_files_loading = false;
@@ -514,6 +550,7 @@
                     file_id={file.id}
                     file_name={file.name}
                     file_type={file.type}
+                    upload_date={file.upload_date}
                   />
                 </li>
               {/each}
@@ -531,6 +568,18 @@
               type="button"
               class="shrink text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 m-0 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
               >Upload</button
+            >
+          </div>
+          <div class="flex flex-col justify-end">
+            <input type="text" id="filetype" bind:value={selected_file_type} placeholder="filetype"/>
+          </div>
+
+          <div class="flex flex-col justify-end">
+            <button
+              on:click={get_personal_files_filtered}
+              type="button"
+              class="shrink text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 m-0 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+              >Filter</button
             >
           </div>
         </div>

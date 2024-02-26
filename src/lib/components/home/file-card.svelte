@@ -4,12 +4,12 @@
     export let file_id: string;
     export let file_name: string;
     export let file_type: string;
+    export let upload_date:Date;
     const all_colors: string[] = ["red", "green", "blue", "purple"];
     let color: string;
-
     onMount(() : void =>
     {
-        color = all_colors[Math.round(Math.random() * (all_colors.length - 1))];
+        color = all_colors[Math.round(Math.random() * (all_colors.length - 1))]
     });
 </script>
 
@@ -35,6 +35,9 @@
         <div class="flex-grow">
             <p class="text-2xl font-semibold text-gray-900 dark:text-white">
                 {file_name}
+            </p>
+            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                Uploaded At: {upload_date}
             </p>
             <p class="text-base text-gray-500 dark:text-gray-400">
                 {file_type.toUpperCase()}
