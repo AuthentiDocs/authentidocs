@@ -1,17 +1,20 @@
 <script lang="ts">
+    import { gen_random_color } from "$lib/helpers";
     import { onMount } from "svelte";
+    import { file_preview_mode } from "$lib/stores";
 
+    export let file_id: string;
     export let file_name: string;
     export let file_type: string;
     export let file_status: number;
-    const all_colors: string[] = ["red", "green", "blue", "purple"];
     let color: string;
     let file_status_color: string;
     let file_status_text: string;
 
     onMount(() : void =>
     {
-        color = all_colors[Math.round(Math.random() * (all_colors.length - 1))];
+        $file_preview_mode = 2;
+        color = gen_random_color();
 
         if(file_status === 0)
         {
@@ -32,10 +35,10 @@
 </script>
 
 <!-- svelte-ignore a11y-invalid-attribute -->
-<a href="javascript:" class="block p-6 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
+<a href="/preview/{file_id}" class="block p-6 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
     <div class="flex">
         <div class="pe-2">
-            {#if file_type === "png" || file_type === "jpeg" || file_type === "jpeg"}
+            {#if file_type === "png" || file_type === "jpeg" || file_type === "jpg" || file_type === "bmp"}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-file-earmark-image w-10 h-10 text-{color}-500 dark:text-{color}-400" viewBox="0 0 16 16">
                     <path d="M6.502 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/>
                     <path d="M14 14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM4 1a1 1 0 0 0-1 1v10l2.224-2.224a.5.5 0 0 1 .61-.075L8 11l2.157-3.02a.5.5 0 0 1 .76-.063L13 10V4.5h-2A1.5 1.5 0 0 1 9.5 3V1z"/>
@@ -55,10 +58,6 @@
                 {file_type.toUpperCase()}
             </p>
         </div>
-        <div class="flex flex-row-reverse items-end">
-            <p class="text-base text-{file_status_color}-500 dark:text-{file_status_color}-400">
-                {file_status_text}
-            </p>
-        </div>
+       
     </div>                  
 </a>

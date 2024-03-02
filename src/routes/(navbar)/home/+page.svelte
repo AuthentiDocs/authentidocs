@@ -1,19 +1,23 @@
 <script lang="ts">
-  import { initFlowbite, Modal } from "flowbite";
+	import Notice from "$lib/components/notice.svelte";
+  import { Modal } from "flowbite";
   import { page } from "$app/stores";
   import FileCard from "$lib/components/home/file-card.svelte";
   import TeamCard from "$lib/components/home/team-card.svelte";
   import ThreadCard from "$lib/components/home/thread-card.svelte";
   import { goto } from "$app/navigation";
-  import { logged_in_store, priv_key,useremail,uid } from "../../../stores";
+  import { logged_in_store, priv_key, useremail, uid } from "$lib/stores";
   import { get } from "svelte/store";
   import { common_fetch } from "$lib/fetch_func";
   import { onMount } from "svelte";
+  import { Entity } from '$lib/containers';
+  import List from '$lib/components/list.svelte';
+  import OrgCard from '$lib/components/home/org-card.svelte';
+
 
   let file_input_elem: HTMLInputElement;
   let modal_elem: HTMLDivElement;
   let modal_obj: Modal;
-  let modal_show: boolean = false;
   let uploading: boolean = false;
   let upload_progress_elem: HTMLDivElement;
 
@@ -50,7 +54,7 @@
     public callback!: () => void;
   }
 
-  let tabs: Tab[] = new Array(5);
+  let tabs: Tab[] = new Array(6);
 
   for (let i: number = 0; i < tabs.length; ++i) {
     tabs[i] = new Tab();
@@ -63,11 +67,12 @@
     };
   }
 
-  tabs[0].name = "My Personal Files";
-  tabs[1].name = "My Teams";
-  tabs[2].name = "Active Threads";
-  tabs[3].name = "Archived Threads";
-  tabs[4].name = "Notices";
+  tabs[0].name = "Personal Files";
+  tabs[1].name = "Organisations";
+  tabs[2].name = "My Teams";
+  tabs[3].name = "Active Threads";
+  tabs[4].name = "Archived Threads";
+  tabs[5].name = "Notices";
 
   /**
    * file list element data object
@@ -78,22 +83,67 @@
     public type!: string;
   }
 
-  let personal_files: File[] = new Array(0);
-  $: personal_files_length = personal_files.length;
-  let personal_files_loading: boolean = true;
+  let personal_files_filter: string;
+  let personal_files: File[] = [];
+  let personal_files_filtered: File[] = [];
+  let personal_files_empty: boolean;
+  let personal_files_loaded: boolean = false;
+
+  $: personal_files_empty = personal_files_filtered.length === 0;
+
+  $:
+  {
+    if(personal_files_filter !== null && personal_files_filter !== undefined && personal_files_filter.length > 0)
+    {
+      personal_files_filtered = [];
+
+      for(let i: number = 0; i < personal_files.length; ++i)
+      {
+        if(personal_files[i].name.match(personal_files_filter))
+        {
+          personal_files_filtered.push(personal_files[i]);
+        }
+      }
+    }
+    else
+    {
+      personal_files_filtered = Array.from(personal_files);
+    }
+  }
 
   /**
    * team list element data object
    */
   class Team {
     public name!: string;
+    public id!: string;
   }
 
-  let teams: Team[] = new Array(5);
+  let teams_filter: string;
+  let teams: Team[] = [];
+  let teams_filtered: Team[] = [];
+  let teams_loaded: boolean = false;
+  let teams_empty: boolean;
 
-  for (let i: number = 0; i < teams.length; ++i) {
-    teams[i] = new Team();
-    teams[i].name = "Team " + (i + 1).toString();
+  $: teams_empty = teams_filtered.length === 0;
+  $:
+  {
+    if(teams_filter !== null && teams_filter !== undefined && teams_filter.length > 0)
+    {
+      teams_filtered = [];
+
+      for(let i: number = 0; i < teams.length; ++i)
+      {
+        if(teams[i].name.match(teams_filter))
+        {
+          teams_filtered.push(teams[i]);
+        }
+      }
+    }
+    else
+    {
+      teams_filtered = Array.from(teams);
+    }
   }
 
   /**
@@ -101,10 +151,62 @@
    */
   class Thread {
     public name!: string;
+    public id!: string;
   }
 
-  let act_threads: Thread[] = new Array(69);
-  let arch_threads: Thread[] = new Array(12);
+  let act_threads_filter: string;
+  let act_threads: Thread[] = [];
+  let act_threads_filtered: Thread[] = [];
+  let act_threads_loaded: boolean = false;
+  let act_threads_empty: boolean;
+
+  $: act_threads_empty = act_threads_filtered.length === 0;
+  $:
+  {
+    if(act_threads_filter !== null && act_threads_filter !== undefined && act_threads_filter.length > 0)
+    {
+      act_threads_filtered = [];
+
+      for(let i: number = 0; i < act_threads.length; ++i)
+      {
+        if(act_threads[i].name.match(act_threads_filter))
+        {
+          act_threads_filtered.push(act_threads[i]);
+        }
+      }
+    }
+    else
+    {
+      act_threads_filtered = Array.from(act_threads);
+    }
+  }
+
+  let arch_threads_filter: string;
+  let arch_threads: Thread[] = [];
+  let arch_threads_filtered: Thread[] = [];
+  let arch_thread_loaded: boolean = false;
+  let arch_thread_empty: boolean;
+
+  $: arch_thread_empty = arch_threads_filtered.length === 0;
+  $:
+  {
+    if(arch_threads_filter !== null && arch_threads_filter !== undefined && arch_threads_filter.length > 0)
+    {
+      arch_threads_filtered = [];
+
+      for(let i: number = 0; i < arch_threads.length; ++i)
+      {
+        if(arch_threads[i].name.match(arch_threads_filter))
+        {
+          arch_threads_filtered.push(arch_threads[i]);
+        }
+      }
+    }
+    else
+    {
+      arch_threads_filtered = Array.from(arch_threads);
+    }
+  }
 
   function show_modal(): void {
     modal_obj.show();
@@ -114,8 +216,83 @@
     modal_obj.hide();
   }
 
+  let orgs_filter: string;
+  let orgs: Entity[] = [];
+  let orgs_filtered: Entity[] = [];
+  let orgs_loaded: boolean = false;
+  let notice_loaded: boolean = false;
+  let notice_empty: boolean;
+  let notices_filter: string;
+  let notices: Entity[] = [];
+  let notices_filtered: Entity[] = [];
+  $: notice_empty = notices_filtered.length === 0;
+  $:
+  {
+    if(notices_filter !== null && notices_filter !== undefined && notices_filter.length > 0)
+    {
+      notices_filtered = [];
+
+      for(let i: number = 0; i < notices.length; ++i)
+      {
+        if(notices[i].name.match(notices_filter))
+        {
+          notices_filtered.push(notices[i]);
+        }
+      }
+    }
+    else
+    {
+      notices_filtered = Array.from(notices);
+    }
+  }
+  $:
+  {
+    if(orgs_filter !== null && orgs_filter !== undefined && orgs_filter.length > 0)
+    {
+      orgs_filtered = [];
+
+      for(let i: number = 0; i < orgs.length; ++i)
+      {
+        if(orgs[i].name.match(orgs_filter))
+        {
+          orgs_filtered.push(orgs[i]);
+        }
+      }
+    }
+    else
+    {
+      orgs_filtered = Array.from(orgs);
+    }
+  }
+
+  function get_notices(): void
+  {
+    let request_obj: any = {
+        userid: $page.data.session?.user?.name,
+    };
+
+    common_fetch(
+    "/api/user/getnotices",
+    request_obj,
+    async (response: Response): Promise<void> => {
+      let response_obj: any = await response.json();
+
+      if (response_obj === null) {
+        return;
+      }
+      notices = new Array((response_obj.length));
+
+      for(let i = 0; i < notices.length; ++i)
+      {
+          notices[i] = new Entity();
+          notices[i].uid = response_obj[i].f_noticeid;
+          notices[i].name = response_obj[i].f_subject;
+      }
+      notice_loaded = true;
+    });
+  }
   function get_personal_files(): void {
-    personal_files_loading = true;
+    personal_files_loaded = false;
     let request_obj: any = {
       given_userid: $page.data.session?.user?.name,
     };
@@ -139,15 +316,174 @@
           personal_files[i].type = response_obj[i].f_file_extension;
         }
 
-        personal_files_loading = false;
-      }
+        // these should stay for testing
+        // let test_count = 10;
+        // personal_files = new Array(test_count);
+
+        // for (let i: number = 0; i < test_count; ++i) {
+        //   personal_files[i] = new File();
+        //   personal_files[i].id = (i + 1).toString();
+        //   personal_files[i].name = "File " + (i + 1);
+        //   personal_files[i].type = "png";
+        // }
+
+        personal_files_loaded = true;
+        personal_files_filtered = Array.from(personal_files);
+        personal_files_filter = "";
+      },
     );
   }
 
-  async function upload(event: Event): Promise<void>
+  function get_organisations(): void
   {
-    if(file_input_elem.value === "")
-    {
+    orgs_loaded = false;
+
+    common_fetch(
+      "/api/user/getorgs",
+      {
+        given_userid: $page.data.session?.user?.name
+      },
+      async (response: Response): Promise<void> => {
+        let response_obj: any = await response.json();
+        orgs = new Array(response_obj.length);
+
+        for(let i: number = 0; i < orgs.length; ++i)
+        {
+          orgs[i] = new Entity();
+          orgs[i].uid = response_obj[i].f_orgid;
+          orgs[i].name = response_obj[i].f_org_name;
+        }
+
+        orgs_loaded = true;
+        orgs_filtered = Array.from(orgs);
+        orgs_filter = "";
+      },
+    );
+  }
+
+  function get_user_teams(): void {
+    teams_loaded = false;
+    let request_obj: any = {
+      given_userid: $page.data.session?.user?.name,
+    };
+
+    common_fetch(
+      "/api/user/getteams",
+      request_obj,
+      async (response: Response): Promise<void> => {
+        let response_obj: any = await response.json();
+
+        teams = [];
+
+        if (response_obj === null) {
+          return;
+        }
+
+        for (let i: number = 0; i < response_obj.length; ++i) {
+          teams[i] = new Team();
+          teams[i].name = response_obj[i].f_team_name;
+          teams[i].id = response_obj[i].f_teamid;
+        }
+
+        // these should stay for testing
+        // let test_count = 10;
+        // teams = new Array(test_count);
+
+        // for (let i: number = 0; i < test_count; ++i) {
+        //   teams[i] = new Team();
+        //   teams[i].id = (i + 1).toString();
+        //   teams[i].name = "Team " + (i + 1);
+        // }
+
+        teams_loaded = true;
+        teams_filtered = Array.from(teams);
+        teams_filter = "";
+      },
+    );
+  }
+  function get_user_active_threads(): void {
+    act_threads_loaded = false;
+    let request_obj: any = {
+      given_userid: $page.data.session?.user?.name,
+    };
+
+    common_fetch(
+      "/api/user/getactivethreads",
+      request_obj,
+      async (response: Response): Promise<void> => {
+        let response_obj: any = await response.json();
+
+        act_threads = [];
+
+        if (response_obj === null) {
+          return;
+        }
+
+        for (let i: number = 0; i < response_obj.length; ++i) {
+          act_threads[i] = new Thread();
+          act_threads[i].name = response_obj[i].f_threadname;
+          act_threads[i].id = response_obj[i].f_threadid;
+        }
+
+        // these should stay for testing
+        // let test_count = 10;
+        // act_threads = new Array(test_count);
+
+        // for (let i: number = 0; i < test_count; ++i) {
+        //   act_threads[i] = new Thread();
+        //   act_threads[i].id = (i + 1).toString();
+        //   act_threads[i].name = "Thread " + (i + 1);
+        // }
+
+        act_threads_loaded = true;
+        act_threads_filtered = Array.from(act_threads);
+        act_threads_filter = "";
+      },
+    );
+  }
+  function get_user_archive_threads(): void {
+    arch_thread_loaded = false;
+    let request_obj: any = {
+      given_userid: $page.data.session?.user?.name,
+    };
+
+    common_fetch(
+      "/api/user/getarchivethreads",
+      request_obj,
+      async (response: Response): Promise<void> => {
+        let response_obj: any = await response.json();
+
+        arch_threads = [];
+
+        if (response_obj === null) {
+          return;
+        }
+
+        for (let i: number = 0; i < response_obj.length; ++i) {
+          arch_threads[i] = new Thread();
+          arch_threads[i].name = response_obj[i].f_threadname;
+          arch_threads[i].id = response_obj[i].f_threadid;
+        }
+
+        // these should stay for testing
+        // let test_count = 10;
+        // arch_threads = new Array(test_count);
+
+        // for (let i: number = 0; i < test_count; ++i) {
+        //   arch_threads[i] = new Thread();
+        //   arch_threads[i].id = (i + 1).toString();
+        //   arch_threads[i].name = "Thread " + (i + 1);
+        // }
+
+        arch_thread_loaded = true;
+        arch_threads_filtered = Array.from(arch_threads);
+        arch_threads_filter = "";
+      },
+    );
+  }
+
+  async function upload(event: Event): Promise<void> {
+    if (file_input_elem.value === "") {
       return;
     }
 
@@ -160,7 +496,7 @@
     if (file === null) {
       return;
     }
-  
+
     let file_buffer: ArrayBuffer = await file.arrayBuffer();
     file_input_elem.value = "";
 
@@ -181,7 +517,7 @@
           body: JSON.stringify({
             data: small_array,
           }),
-        }
+        },
       );
 
       let response_obj: any = await response.json();
@@ -189,16 +525,17 @@
       console.log(response_obj);
 
       if (response_obj.success === false) {
-        console.error("dhuru");
-
         success = false;
 
         break;
       }
 
-      upload_progress_elem.style.width = Math.round(i * 100 / file_buffer.byteLength) + "%";
+      upload_progress_elem.style.width =
+        Math.round((i * 100) / file_buffer.byteLength) + "%";
     }
     if (success) {
+      upload_progress_elem.style.width = "100%";
+
       await fetch("/api/files/addchunkfile/finish?filename=" + file.name, {
         method: "POST",
         headers: {
@@ -208,7 +545,7 @@
       }).then(async (response: Response): Promise<void> => {
         file_success_response_obj = await response.json();
 
-        console.log("file upload shesh:line223",file_success_response_obj);
+        console.log("file upload shesh:line223", file_success_response_obj);
       });
 
       let subtle_crypto = window.crypto.subtle;
@@ -221,14 +558,13 @@
             hash: { name: "SHA-384" },
           },
           temp_priv_key,
-          file_buffer
+          file_buffer,
         );
 
         let signature_hex: string = [...new Uint8Array(signature)]
           .map((x) => x.toString(16).padStart(2, "0"))
           .join("");
         let pubkey_json: string | null = localStorage.getItem("pub_key");
-        console.log("add file", pubkey_json);
         if (pubkey_json) {
           let request_obj: any = {
             fileid: file_success_response_obj.fileid,
@@ -244,7 +580,7 @@
               let response_obj: any = await response.json();
 
               console.log(response_obj);
-            }
+            },
           );
         }
       }
@@ -254,216 +590,239 @@
       modal_obj.hide();
       get_personal_files();
     }
-  };
+  }
 
   onMount((): void => {
-    personal_files_loading = true;
-
     if ($page.data.session === null) {
       goto("/");
 
       return;
     } else {
       logged_in_store.set(true);
-      uid.set($page.data.session?.user?.name as string)
-      useremail.set($page.data.session?.user?.email as string)
+      uid.set($page.data.session?.user?.name as string);
+      useremail.set($page.data.session?.user?.email as string);
     }
 
     get_personal_files();
+    get_organisations();
+    get_user_teams();
+    get_user_active_threads();
+    get_user_archive_threads();
+    get_notices();
 
-    modal_obj = new Modal(modal_elem, {
-      onHide: (): void => {
-        modal_show = false;
-      },
-      onShow: (): void => {
-        modal_show = true;
-      },
-    });
+    modal_obj = new Modal(modal_elem);
 
     tabs[0].callback();
-
-    for (let i: number = 0; i < act_threads.length; ++i) {
-      act_threads[i] = new Thread();
-      act_threads[i].name = "Thread " + (i + 1).toString();
-    }
-
-    for (let i: number = 0; i < arch_threads.length; ++i) {
-      arch_threads[i] = new Thread();
-      arch_threads[i].name = "Thread " + (i + 1).toString();
-    }
   });
 </script>
 
-<div class="pg-center flex">
-  <!-- Select Tabs to see various lists -->
-  <div
-    class="pg-left block bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700"
-  >
-    <!-- svelte-ignore a11y-invalid-attribute -->
-    <ul class="tab-options space-y-2 mx-6 mt-6 mb-6 pe-1 pb-1">
-      <!-- My personal files -->
-      <li>
-        <a
-          href="javascript:"
-          class="flex {color[0]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
-          on:click={tabs[0].callback}
-        >
-          <svg
-            class="w-8 h-8 text-blue-500 dark:text-blue-400 pe-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+<div class="pg-center">
+  <div class="pg-container">
+    <!-- Select Tabs to see various lists -->
+    <div
+      class="pg-left block bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 p-6"
+    >
+      <div class="tab-options">
+        <ul class="space-y-2 pb-1">
+          <!-- My personal files -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[0]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[0].callback}
+            >
+              <svg
+                class="w-8 h-8 text-blue-500 dark:text-blue-400 me-2"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m4 12 8-8 8 8M6 10.5V19c0 .6.4 1 1 1h3v-3c0-.6.4-1 1-1h2c.6 0 1 .4 1 1v3h3c.6 0 1-.4 1-1v-8.5"
+                />
+              </svg>
+              <p
+                class="text-2xl font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Personal Files
+              </p>
+            </a>
+          </li>
+          <!-- Orgs -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[1]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[1].callback}
+            >
+            <svg class="w-8 h-8 text-purple-500 dark:text-purple-400 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 0 0-2 2v4m5-6h8M8 7V5c0-1.1.9-2 2-2h4a2 2 0 0 1 2 2v2m0 0h3a2 2 0 0 1 2 2v4m0 0v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6m18 0s-4 2-9 2-9-2-9-2m9-2h0"/>
+            </svg>
+              <p
+                class="text-2xl font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Organisations
+              </p>
+            </a>
+          </li>
+          <!-- My teams -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[2]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[2].callback}
+            >
+              <svg
+                class="w-8 h-8 text-green-500 dark:text-green-400 me-2"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-width="2"
+                  d="M4.5 17H4a1 1 0 0 1-1-1 3 3 0 0 1 3-3h1m0-3a2.5 2.5 0 1 1 2-4.5M19.5 17h.5c.6 0 1-.4 1-1a3 3 0 0 0-3-3h-1m0-3a2.5 2.5 0 1 0-2-4.5m.5 13.5h-7a1 1 0 0 1-1-1 3 3 0 0 1 3-3h3a3 3 0 0 1 3 3c0 .6-.4 1-1 1Zm-1-9.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"
+                />
+              </svg>
+              <p
+                class="text-2xl font-semibold text-gray-700 dark:text-gray-200"
+              >
+                My Teams
+              </p>
+            </a>
+          </li>
+          <!-- active threads -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[3]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[3].callback}
+            >
+              <svg
+                class="w-8 h-8 text-indigo-500 dark:text-indigo-400 me-2"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 8v8a5 5 0 1 0 10 0V6.5a3.5 3.5 0 1 0-7 0V15a2 2 0 0 0 4 0V8"
+                />
+              </svg>
+              <p
+                class="text-2xl font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Active Threads ({act_threads.length})
+              </p>
+            </a>
+          </li>
+          <!-- Archived Threads -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[4]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[4].callback}
+            >
+              <svg
+                class="w-8 h-8 text-yellow-500 dark:text-yellow-400 me-2"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13.5 8H4m0-2v13c0 .6.4 1 1 1h14c.6 0 1-.4 1-1V9c0-.6-.4-1-1-1h-5a1 1 0 0 1-.8-.4l-1.9-2.2a1 1 0 0 0-.8-.4H5a1 1 0 0 0-1 1Z"
+                />
+              </svg>
+              <p
+                class="text-2xl font-semibold text-gray-700 dark:text-gray-200"
+              >
+                Archived Threads
+              </p>
+            </a>
+          </li>
+          <!-- Notices -->
+          <li>
+            <!-- svelte-ignore a11y-invalid-attribute -->
+            <a
+              href="javascript:"
+              class="flex {color[5]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+              on:click={tabs[5].callback}
+            >
+              <svg
+                class="w-8 h-8 text-red-500 dark:text-red-400 me-2"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 5.4V3m0 2.4a5.3 5.3 0 0 1 5.1 5.3v1.8c0 2.4 1.9 3 1.9 4.2 0 .6 0 1.3-.5 1.3h-13c-.5 0-.5-.7-.5-1.3 0-1.2 1.9-1.8 1.9-4.2v-1.8A5.3 5.3 0 0 1 12 5.4ZM8.7 18c.1.9.3 1.5 1 2.1a3.5 3.5 0 0 0 4.6 0c.7-.6 1.3-1.2 1.4-2.1h-7Z"
+                />
+              </svg>
+              <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                Notices
+              </p>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div
+      class="pg-right block bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ms-5 p-6"
+    >
+      {#if tab_index === 0}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
           >
-            <path
-              d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"
-            />
-          </svg>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
             My Personal Files
           </p>
-        </a>
-      </li>
-      <!-- My teams -->
-      <li>
-        <a
-          href="javascript:"
-          class="flex {color[1]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          on:click={tabs[1].callback}
-        >
-          <svg
-            class="w-8 h-8 text-green-500 dark:text-green-400 pe-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 20 19"
-          >
-            <path
-              d="M14.5 0A3.987 3.987 0 0 0 11 2.1a4.977 4.977 0 0 1 3.9 5.858A3.989 3.989 0 0 0 14.5 0ZM9 13h2a4 4 0 0 1 4 4v2H5v-2a4 4 0 0 1 4-4Z"
-            />
-            <path
-              d="M5 19h10v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2ZM5 7a5.008 5.008 0 0 1 4-4.9 3.988 3.988 0 1 0-3.9 5.859A4.974 4.974 0 0 1 5 7Zm5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm5-1h-.424a5.016 5.016 0 0 1-1.942 2.232A6.007 6.007 0 0 1 17 17h2a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5ZM5.424 9H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h2a6.007 6.007 0 0 1 4.366-5.768A5.016 5.016 0 0 1 5.424 9Z"
-            />
-          </svg>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-            My Teams
-          </p>
-        </a>
-      </li>
-      <!-- active threads -->
-      <li>
-        <a
-          href="javascript:"
-          class="flex {color[2]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          on:click={tabs[2].callback}
-        >
-          <svg
-            class="w-8 h-8 text-red-500 dark:text-red-400 pe-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 12 20"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M1 6v8a5 5 0 1 0 10 0V4.5a3.5 3.5 0 1 0-7 0V13a2 2 0 0 0 4 0V6"
-            />
-          </svg>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-            Active Threads ({act_threads.length})
-          </p>
-        </a>
-      </li>
-      <!-- Archived Threads -->
-      <li>
-        <a
-          href="javascript:"
-          class="flex {color[3]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          on:click={tabs[3].callback}
-        >
-          <svg
-            class="w-8 h-8 text-yellow-500 dark:text-yellow-400 pe-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 18 18"
-          >
-            <path
-              d="M18 5H0v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5Zm-7.258-2L9.092.8a2.009 2.009 0 0 0-1.6-.8H2.049a2 2 0 0 0-2 2v1h10.693Z"
-            />
-          </svg>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-            Archived Threads
-          </p>
-        </a>
-      </li>
-      <!-- Notices -->
-      <li>
-        <a
-          href="javascript:"
-          class="flex {color[4]} items-center block p-6 border border-gray-200 rounded-lg shadow dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          on:click={tabs[4].callback}
-        >
-          <svg
-            class="w-8 h-8 text-red-500 dark:text-red-400 pe-2"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 14 20"
-          >
-            <path
-              d="M12.133 10.632v-1.8A5.406 5.406 0 0 0 7.979 3.57.946.946 0 0 0 8 3.464V1.1a1 1 0 0 0-2 0v2.364a.946.946 0 0 0 .021.106 5.406 5.406 0 0 0-4.154 5.262v1.8C1.867 13.018 0 13.614 0 14.807 0 15.4 0 16 .538 16h12.924C14 16 14 15.4 14 14.807c0-1.193-1.867-1.789-1.867-4.175ZM3.823 17a3.453 3.453 0 0 0 6.354 0H3.823Z"
-            />
-          </svg>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-            Notices
-          </p>
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div
-    class="pg-right block bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ms-5"
-  >
-    {#if tab_index === 0}
-      <div class="list-container m-6">
-        <p
-          class="list-title text-2xl font-bold text-gray-900 dark:text-white ps-1"
-        >
-          My Personal Files
-        </p>
-        {#if personal_files_loading}
-          <div class="list-elements flex items-center justify-center">
-            <div role="status">
-                <svg aria-hidden="true" class="w-20 h-20 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                 </svg>
-                <span class="sr-only">Loading...</span>
             </div>
+            <input bind:value={personal_files_filter} type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
           </div>
-        {:else}
-          {#if personal_files_length > 0}
-            <ul class="list-elements space-y-2 pb-1 pe-1" style="overflow-y: auto;">
-              {#each personal_files as file}
-                <li>
-                  <FileCard
-                    file_id={file.id}
-                    file_name={file.name}
-                    file_type={file.type}
-                  />
-                </li>
-              {/each}
-            </ul>
-          {:else}
-            <div class="list-empty flex justify-center p-4 text-sm text-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-gray-300" role="alert">
-              <p>Wow! Such empty *_*</p>
-            </div>
-          {/if}
-        {/if}
-        <div class="list-upload flex justify-end">
+        </div>
+        <List loaded={personal_files_loaded} empty={personal_files_empty}>
+          {#each personal_files_filtered as file}
+            <li>
+              <FileCard
+                file_id={file.id}
+                file_name={file.name}
+                file_type={file.type}
+              />
+            </li>
+          {/each}
+        </List>
+        <div class="list-upload flex justify-end mt-2">
           <div class="flex flex-col justify-end">
             <button
               on:click={show_modal}
@@ -473,53 +832,123 @@
             >
           </div>
         </div>
-      </div>
-    {:else if tab_index === 1}
-      <div class="list-container m-6">
-        <p
-          class="list-title text-2xl font-bold text-gray-900 dark:text-white pb-3 ps-1"
-        >
-          My Teams
-        </p>
-        <ul class="list-elements space-y-2 pb-2" style="overflow-y: auto;">
-          {#each teams as team}
+      {:else if tab_index === 1}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
+          >
+            Organisations
+          </p>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
+          </div>
+        </div>
+        <List loaded={orgs_loaded} empty={orgs_filtered.length === 0}>
+          {#each orgs_filtered as org}
             <li>
-              <TeamCard team_name={team.name} />
+              <OrgCard uid={org.uid} name={org.name} />
             </li>
           {/each}
-        </ul>
-      </div>
-    {:else if tab_index === 2}
-      <div class="list-container m-6">
-        <p
-          class="list-title text-2xl font-bold text-gray-900 dark:text-white pb-3 ps-1"
-        >
-          Active Threads
-        </p>
-        <ul class="list-elements space-y-2 pb-2" style="overflow-y: auto;">
+        </List>
+      {:else if tab_index === 2}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
+          >
+            My Teams
+          </p>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input bind:value={teams_filter} type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
+          </div>
+        </div>
+        <List loaded={teams_loaded} empty={teams_empty}>
+          {#each teams_filtered as team}
+            <li>
+              <TeamCard team_name={team.name} team_id={team.id} />
+            </li>
+          {/each}
+        </List>
+      {:else if tab_index === 3}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
+          >
+            Active Threads
+          </p>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
+          </div>
+        </div>
+        <List loaded={act_threads_loaded} empty={act_threads_empty}>
           {#each act_threads as thread}
             <li>
-              <ThreadCard thread_name={thread.name} />
+              <ThreadCard thread_name={thread.name} thread_id={thread.id} />
             </li>
           {/each}
-        </ul>
-      </div>
-    {:else if tab_index === 3}
-      <div class="list-container m-6">
-        <p
-          class="list-title text-2xl font-bold text-gray-900 dark:text-white pb-3 ps-1"
-        >
-          Archived Threads
-        </p>
-        <ul class="list-elements space-y-2 pb-2" style="overflow-y: auto;">
-          {#each arch_threads as thread}
+        </List>
+      {:else if tab_index === 4}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
+          >
+            Archived Threads
+          </p>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input bind:value={arch_threads_filter} type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
+          </div>
+        </div>
+        <List loaded={arch_thread_loaded} empty={arch_thread_empty}>
+          {#each arch_threads_filtered as thread}
             <li>
-              <ThreadCard thread_name={thread.name} />
+              <ThreadCard thread_name={thread.name} thread_id={thread.id} />
             </li>
           {/each}
-        </ul>
-      </div>
-    {/if}
+        </List>
+      {:else if tab_index === 5}
+        <div class="mb-2">
+          <p
+            class="list-title text-2xl font-bold text-gray-700 dark:text-gray-200 pb-3 ps-1"
+          >
+            Notices
+          </p>
+          <div class="relative">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+            </div>
+            <input bind:value={notices_filter} type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Filter" autocomplete="off" required />
+          </div>
+        </div>
+        <List loaded={notice_loaded} empty={notice_empty}>
+          {#each notices_filtered as notice}
+              <li>
+                  <Notice uid={notice.uid} title={notice.name} />
+              </li>
+          {/each}
+        </List>
+      {/if}
+    </div>
   </div>
 </div>
 <div
@@ -536,38 +965,48 @@
         class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600"
       >
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-          File Upload
+          {#if uploading}
+            Uploading...
+          {:else}
+            File Upload
+          {/if}
         </h3>
-        <button
-          on:click={hide_modal}
-          type="button"
-          class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-          data-modal-hide="static-modal"
-        >
-          <svg
-            class="w-3 h-3"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 14 14"
+        {#if !uploading}
+          <button
+            on:click={hide_modal}
+            type="button"
+            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+            data-modal-hide="static-modal"
           >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-            />
-          </svg>
-          <span class="sr-only">Close modal</span>
-        </button>
+            <svg
+              class="w-3 h-3"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 14 14"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+              />
+            </svg>
+            <span class="sr-only">Close modal</span>
+          </button>
+        {/if}
       </div>
       <!-- Modal body -->
       <div class="p-4 md:p-5 space-y-4">
         <div class="flex items-center justify-center w-full">
-          {#if uploading}      
+          {#if uploading}
             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div bind:this={upload_progress_elem} class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+              <div
+                bind:this={upload_progress_elem}
+                class="bg-blue-600 h-2.5 rounded-full"
+                style="width: 0%"
+              ></div>
             </div>
           {:else}
             <label
@@ -610,70 +1049,44 @@
   </div>
 </div>
 
-{#if modal_show}
-  <div class="bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-40" />
-{/if}
-
 <style>
   .pg-center {
     position: absolute;
     top: 5.5rem;
     bottom: 1rem;
-    left: 10%;
-    right: 10%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
-  .pg-left {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 70%;
-  }
-  .pg-right {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 30%;
-    right: 0;
+  .pg-container {
+    width: 75rem;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
   }
   .tab-options
   {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    height: 100%;
     overflow-y: auto;
   }
-  .list-container {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-  }
-  .list-title {
-    position: absolute;
-    height: 2.5rem;
+  .pg-right {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
   .list-elements {
-    position: absolute;
-    top: 2.5rem;
-    bottom: 3rem;
-    left: 0;
-    right: 0;
+    overflow-y: auto;
+    flex-grow: 1;
   }
-  .list-empty
-  {
-    position: absolute;
-    top: 2.5rem;
-    left: 0;
-    right: 0;
-  }
-  .list-upload {
-    position: absolute;
-    height: 3rem;
-    right: 0;
-    bottom: 0;
+  @media (max-width: 1231px) {
+    .pg-container {
+      width: 100%;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
   }
 </style>

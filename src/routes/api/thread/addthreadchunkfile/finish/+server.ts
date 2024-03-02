@@ -1,5 +1,5 @@
 import { filemap } from "$lib/server/stores";
-import { json, type RequestEvent } from "@sveltejs/kit";
+import { error, json, type RequestEvent } from "@sveltejs/kit";
 import { get } from "svelte/store";
 import { supabase } from "$lib/server/supabase_client.server";
 import { fileTypeFromBuffer } from "file-type";
@@ -11,20 +11,20 @@ export async function POST({
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(JSON.stringify("you must be logged in to add files"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
+    return new (error as any)(401, "You must be logged in to add file");
   }
   let url: URL = new URL(request.url);
   let filename: string | null = url.searchParams.get("filename");
   let given_threadid: string | null = url.searchParams.get("threadid");
 
-  if (filename === null) {
+  if (
+    filename === null ||
+    filename === undefined ||
+    given_threadid === undefined ||
+    filename === undefined
+  ) {
     console.log(
-      "ERROR @api/thread/addthreadchunkfile/finish:27: map filemap returned as undefined"
+      "ERROR @api/thread/addthreadchunkfile/finish:22: filename or given_threadid returned empty/undefined from url"
     );
     get(filemap).clear();
     return json({ success: false });
@@ -34,7 +34,7 @@ export async function POST({
 
   if (file_array === undefined) {
     console.log(
-      "ERROR @api/thread/addthreadchunkfile/finish:37: array filearray returned as undefined from filemap"
+      "ERROR @api/thread/addthreadchunkfile/finish:32: array filearray returned as undefined from filemap"
     );
     get(filemap).clear();
     return json({ success: false });
@@ -76,51 +76,40 @@ export async function POST({
   // console.log("supabaseupload" + data);
   if (storage_call_response.error) {
     console.log(
-      "ERROR @api/thread/addthreadchunkfile/finish:78: supabase storage upload error\n",
+      "ERROR @api/thread/addthreadchunkfile/finish:79: supabase storage upload error\n",
       storage_call_response.error
     );
     get(filemap).clear();
-    return new Response(
-      JSON.stringify(
-        "internal server error while uploading to file server" +
-          storage_call_response.error
-      ),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while adding file to thread."
     );
   }
   let given_file_extension = fileExt,
     given_file_ownerid = session?.user.name,
     given_file_url = filePath,
     given_filename = filename,
-    given_file_mimetype = ret_mime; 
+    given_file_mimetype = ret_mime;
 
-    let { data:result, error:_error } = await supabase
-    .rpc('add_thread_file', {
-      given_file_extension, 
-      given_file_mimetype, 
-      given_file_ownerid, 
-      given_file_url, 
-      given_filename, 
-      given_threadid
-    })
+  let { data: result, error: _error } = await supabase.rpc("add_thread_file", {
+    given_file_extension,
+    given_file_mimetype,
+    given_file_ownerid,
+    given_file_url,
+    given_filename,
+    given_threadid,
+  });
 
   if (_error) {
     get(filemap).clear();
     console.log(
-      "ERROR @api/thread/addthreadchunkfile/finish:114: supabase file data insert into database error\n",
+      "ERROR @api/thread/addthreadchunkfile/finish:106: supabase file data insert into database error\n",
       _error
     );
-    return new Response(JSON.stringify("internal server error: " + _error), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 500,
-    });
+    return new (error as any)(
+      500,
+      "Internal Server Error, while adding file to thread."
+    );
   }
 
   // console.log("add_file" + result1);

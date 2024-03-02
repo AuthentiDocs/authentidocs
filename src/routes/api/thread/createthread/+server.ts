@@ -1,19 +1,14 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(JSON.stringify("you must be logged in to create thread"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
+    return new (error as any)(401, "You must be logged in to create thread");
   }
   // console.log(session);
   const thread_info = await request.json();
@@ -25,6 +20,21 @@ export async function POST({
   // let sign_serial=0;
   let given_userid = session.user.name;
 
+  if (
+    given_description === undefined ||
+    given_description === null ||
+    given_parent_teamid === undefined ||
+    given_parent_teamid === null ||
+    given_threadname === undefined ||
+    given_threadname === null
+  ) {
+    console.log(
+      "ERROR @api/thread/createthread:32: invalid user input error:\n",
+      thread_info
+    );
+    return new (error as any)(422, "Invalid inputs, while creating thread.");
+  }
+
   let { data: result, error: _error } = await supabase.rpc("create_thread", {
     given_description,
     given_parent_teamid,
@@ -35,19 +45,15 @@ export async function POST({
   // console.log("add key rps result",result)
   if (_error) {
     console.log(
-      "ERROR @api/thread/createthread:38: supabase create thread error\n",
+      "ERROR @api/thread/createthread:48: supabase create thread error\n",
       _error
     );
-    return new Response(
-      JSON.stringify("internal server error while creating thread: " + _error),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while creating thread."
     );
   }
+
   let response: Response = new Response(JSON.stringify(result), {
     headers: {
       "Content-Type": "application/json",

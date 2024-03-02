@@ -1,5 +1,5 @@
 import { filemap } from "$lib/server/stores";
-import { json, type RequestEvent } from "@sveltejs/kit";
+import { error, json, type RequestEvent } from "@sveltejs/kit";
 import { get } from "svelte/store";
 import { supabase } from "$lib/server/supabase_client.server";
 import { fileTypeFromBuffer } from "file-type";
@@ -11,19 +11,14 @@ export async function POST({
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(JSON.stringify("you must be logged in to add files"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
+    return new (error as any)(401, "You must be logged in to add files.");
   }
   let url: URL = new URL(request.url);
   let filename: string | null = url.searchParams.get("filename");
 
   if (filename === null) {
     console.log(
-      "ERROR @api/files/addchunkfile/finish:25: map filemap returned as undefined"
+      "ERROR @api/files/addchunkfile/finish:21: url param filename returned as undefined"
     );
     get(filemap).clear();
     return json({ success: false });
@@ -33,7 +28,7 @@ export async function POST({
 
   if (file_array === undefined) {
     console.log(
-      "ERROR @api/files/addchunkfile/finish:36: array filearray returned as undefined from filemap"
+      "ERROR @api/files/addchunkfile/finish:31: array filearray returned as undefined from filemap"
     );
     get(filemap).clear();
     return json({ success: false });
@@ -75,21 +70,13 @@ export async function POST({
   // console.log("supabaseupload" + data);
   if (storage_call_response.error) {
     console.log(
-      "ERROR @api/files/addchunkfile/finish:77: supabase storage upload error\n",
+      "ERROR @api/files/addchunkfile/finish:73: supabase storage upload error\n",
       storage_call_response.error
     );
     get(filemap).clear();
-    return new Response(
-      JSON.stringify(
-        "internal server error while uploading to file server" +
-          storage_call_response.error
-      ),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while uploading file to cloud storage"
     );
   }
   let given_file_extension = fileExt,
@@ -111,15 +98,13 @@ export async function POST({
   if (_error) {
     get(filemap).clear();
     console.log(
-      "ERROR @api/files/addchunkfile/finish:114: supabase file data insert into database error\n",
+      "ERROR @api/files/addchunkfile/finish:101: supabase file data insert into database error\n",
       _error
     );
-    return new Response(JSON.stringify("internal server error: " + _error), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 500,
-    });
+    return new (error as any)(
+      500,
+      "Internal Server Error, while adding file to database."
+    );
   }
 
   // console.log("add_file" + result1);

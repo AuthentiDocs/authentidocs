@@ -1,5 +1,5 @@
 import { filemap } from "$lib/server/stores";
-import { json, type RequestEvent } from "@sveltejs/kit";
+import { error, json, type RequestEvent } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 export async function POST({
@@ -9,20 +9,16 @@ export async function POST({
   const session = await locals.getSession();
   if (!session?.user) {
     //   throw error(401, "You must sign in to add files.")
-    
-    return new Response(JSON.stringify("you must be logged in to add files"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
+    return new (error as any)(401, "You must be logged in to add files.");
   }
 
   let url: URL = new URL(request.url);
   let filename: string | null = url.searchParams.get("filename");
 
   if (filename === null) {
-    console.log("ERROR @api/files/addchunkfile/continue:25: url parameter filename returned null")
+    console.log(
+      "ERROR @api/files/addchunkfile/continue:20: url parameter filename returned null"
+    );
     get(filemap).clear();
     return json({ success: false });
   }
@@ -34,7 +30,9 @@ export async function POST({
     request_obj.data === null ||
     request_obj.data === undefined
   ) {
-    console.log("ERROR @api/files/addchunkfile/continue:37: request json null||undefined or has incorrect body")
+    console.log(
+      "ERROR @api/files/addchunkfile/continue:34: request json null||undefined or has incorrect body:\n", request_obj
+    );
     get(filemap).clear();
     return json({ success: false });
   }

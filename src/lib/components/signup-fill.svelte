@@ -1,11 +1,7 @@
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
-  import { db, type PriveKey } from "$lib/db";
   import { signIn } from "@auth/sveltekit/client";
-  import { new_key, uid } from "../../stores";
-  import { get } from "svelte/store";
   import { common_fetch } from "$lib/fetch_func";
-    import { onMount } from "svelte";
+  import { onMount } from "svelte";
 
   export let signup_card_content_div: HTMLDivElement;
   export let form: HTMLFormElement;

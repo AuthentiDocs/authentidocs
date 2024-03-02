@@ -1,7 +1,7 @@
 <script lang="ts">
     import "../app.pcss";
     import { db, type PriveKey } from "$lib/db";
-    import { priv_key } from "../stores";
+    import { priv_key } from "$lib/stores";
     import { page } from "$app/stores";
     import { onMount } from "svelte";
     import { common_fetch } from "$lib/fetch_func";
@@ -36,8 +36,8 @@
                 });
 
                 let request_obj: any = {
-                user_id: $page.data.session?.user?.name,
-                key: JSON.stringify(public_key),
+                    user_id: $page.data.session?.user?.name,
+                    key: JSON.stringify(public_key),
                 };
                 common_fetch(
                 "/api/user/addkey",

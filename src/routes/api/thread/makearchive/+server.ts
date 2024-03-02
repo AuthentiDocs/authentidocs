@@ -1,27 +1,36 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(JSON.stringify("you must be logged in to close threads"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
+    return new (error as any)(401, "You must be logged in to archive thread");
   }
   // console.log(session);
-  const file_info = await request.json();
+  const thread_info = await request.json();
   // console.log("inside add key",key_info);
 
-  let given_closing_comment = file_info.closing_comment;
-  let given_threadid = file_info.threadid;
+  let given_closing_comment = thread_info.closing_comment;
+  let given_threadid = thread_info.threadid;
   let given_current_userid = session.user.name;
+  if (
+    given_threadid === undefined ||
+    given_threadid === null ||
+    given_closing_comment === undefined ||
+    given_closing_comment === null ||
+    given_current_userid === undefined ||
+    given_current_userid === null
+  ) {
+    console.log(
+      "ERROR @api/thread/makearchive:29: invalid user input error:\n",
+      thread_info
+    );
+    return new (error as any)(422, "Invalid inputs, while archiving thread.");
+  }
 
   let { data: result, error: _error } = await supabase.rpc(
     "make_thread_archived",
@@ -35,17 +44,12 @@ export async function POST({
   // console.log("add key rps result",result)
   if (_error) {
     console.log(
-      "ERROR @api/thread/makearchive:38: supabase make thread archived error\n",
+      "ERROR @api/thread/makearchive:47: supabase make thread archived error\n",
       _error
     );
-    return new Response(
-      JSON.stringify("internal server error while archiving thread: " + _error),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while archiving thread."
     );
   }
 

@@ -1,22 +1,14 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(
-      JSON.stringify("you must be logged in to view file history"),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 401,
-      }
-    );
+    return new (error as any)(401, "You must be logged in to get file history");
   }
   // console.log(session);
   const file_info = await request.json();
@@ -24,26 +16,33 @@ export async function POST({
 
   let given_fileid = file_info.fileid;
 
-  let { data:result, error:_error } = await supabase.rpc("get_file_history_fileid", {
-    given_fileid,
-  });
+  if (given_fileid === undefined || given_fileid === null) {
+    console.log(
+      "ERROR @api/thread/getfilehistory:21: invalid user input error:\n",
+      file_info
+    );
+    return new (error as any)(
+      422,
+      "Invalid inputs, while getting file history."
+    );
+  }
+
+  let { data: result, error: _error } = await supabase.rpc(
+    "get_file_history_fileid",
+    {
+      given_fileid,
+    }
+  );
 
   // console.log("add key rps result",result)
   if (_error) {
     console.log(
-      "ERROR @api/thread/getfilehistory:34: supabase get file history error\n",
+      "ERROR @api/thread/getfilehistory:40: supabase get file history error\n",
       _error
     );
-    return new Response(
-      JSON.stringify(
-        "internal server error while getting file history: " + _error
-      ),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while getting thread file history."
     );
   }
 

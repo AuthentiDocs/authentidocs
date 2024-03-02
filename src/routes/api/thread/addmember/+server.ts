@@ -1,21 +1,16 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(
-      JSON.stringify("you must be logged in to add member to threads"),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 401,
-      }
+    return new (error as any)(
+      401,
+      "You must be logged in to add member to a thread."
     );
   }
 
@@ -24,15 +19,42 @@ export async function POST({
   // console.log("inside add key",key_info);
   let uid_list = member_info.uid_list;
   let given_threadid = member_info.threadid;
-  let { data: sign_serial, error } = await supabase.rpc(
+
+  if (
+    uid_list === undefined ||
+    uid_list === null ||
+    given_threadid === undefined ||
+    given_threadid === null
+  ) {
+    console.log(
+      "ERROR @api/thread/addmember:30: invalid user input error:\n",
+      member_info
+    );
+    return new (error as any)(
+      422,
+      "Invalid inputs, while adding member to thread."
+    );
+  }
+  let { data: sign_serial, error: _error } = await supabase.rpc(
     "get_current_signing_serial",
     {
       given_threadid,
     }
   );
 
-  for (let i = 0; i < uid_list.len(); i++) {
-    let given_signing_serial = sign_serial++;
+  if (_error) {
+    console.log(
+      "ERROR @api/thread/addmember:47: supabase get signing serial error\n",
+      _error
+    );
+    return new (error as any)(
+      500,
+      "Internal Server Error, while adding member to thread."
+    );
+  }
+
+  for (let i = 0; i < uid_list.length; i++) {
+    let given_signing_serial = ++sign_serial;
     let given_user_role = "member";
     let given_userid = uid_list[i];
     let current_userid = session.user.name;
@@ -51,19 +73,12 @@ export async function POST({
     // console.log("add key rps result",result)
     if (_error) {
       console.log(
-        "ERROR @api/thread/addmember:54: supabase add thread member error\n",
+        "ERROR @api/thread/addmember:76: supabase add thread member error\n",
         _error
       );
-      return new Response(
-        JSON.stringify(
-          "internal server error while adding thread member: " + _error
-        ),
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          status: 500,
-        }
+      return new (error as any)(
+        500,
+        "Internal Server Error, while adding member to thread."
       );
     }
   }

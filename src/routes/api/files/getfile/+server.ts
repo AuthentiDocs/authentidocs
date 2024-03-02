@@ -4,7 +4,6 @@ import { json, error } from "@sveltejs/kit";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();

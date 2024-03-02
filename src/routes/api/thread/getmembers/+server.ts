@@ -1,25 +1,33 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
-  const session = await locals.getSession();
-  if (!session?.user) {
-    return new Response(JSON.stringify("you must be logged in to view thread members"), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 401,
-    });
-  }
+  // const session = await locals.getSession();
+  // if (!session?.user) {
+  //   return new (error as any)(
+  //     401,
+  //     "You must be logged in to get thread members"
+  //   );
+  // }
   // console.log(session);
-  const team_info = await request.json();
+  const thread_info = await request.json();
   // console.log("inside add key",key_info);
-  let given_threadid = team_info.given_threadid;
+  let given_threadid = thread_info.given_threadid;
 
+  if (given_threadid === undefined || given_threadid === null) {
+    console.log(
+      "ERROR @api/thread/getmembers:23: invalid user input error:\n",
+      thread_info
+    );
+    return new (error as any)(
+      422,
+      "Invalid inputs, while getting thread member lists."
+    );
+  }
   let { data: result, error: _error } = await supabase.rpc(
     "get_thread_member_list",
     {
@@ -30,17 +38,12 @@ export async function POST({
   // console.log("add key rps result",result)
   if (_error) {
     console.log(
-      "ERROR @api/thread/getmembers:33: supabase get thread user list error\n",
+      "ERROR @api/thread/getmembers:41: supabase get thread user list error\n",
       _error
     );
-    return new Response(
-      JSON.stringify("internal server error while getting thread member list: " + _error),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while getting member list of thread."
     );
   }
 

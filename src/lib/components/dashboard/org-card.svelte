@@ -1,21 +1,22 @@
 <script lang="ts">
+    import { gen_random_color } from "$lib/helpers";
     import { onMount } from "svelte";
 
     export let org_name: string;
-    const all_colors: string[] = ["red", "green", "blue", "purple"];
+    export let org_id: string;
     let color: string;
 
     onMount(() : void =>
     {
-        color = all_colors[Math.round(Math.random() * (all_colors.length - 1))];
+        color = gen_random_color();
     });
 </script>
 
 <!-- svelte-ignore a11y-invalid-attribute -->
-<a href="javascript:" class="block p-6 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
+<a href="/org/{org_id}" class="block p-6 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
     <div class="flex">
-        <svg class="w-8 h-8 text-{color}-500 dark:text-{color}-400 pe-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-            <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
+        <svg class="w-8 h-8 text-{color}-500 dark:text-{color}-400 me-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 0 0-2 2v4m5-6h8M8 7V5c0-1.1.9-2 2-2h4a2 2 0 0 1 2 2v2m0 0h3a2 2 0 0 1 2 2v4m0 0v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6m18 0s-4 2-9 2-9-2-9-2m9-2h0"/>
         </svg>
         <div class="flex-grow">
             <p class="text-2xl font-semibold text-gray-900 dark:text-white">

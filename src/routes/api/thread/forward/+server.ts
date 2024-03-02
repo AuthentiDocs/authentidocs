@@ -1,30 +1,39 @@
 import { supabase } from "$lib/server/supabase_client.server";
+import { error } from "@sveltejs/kit";
 import type { RequestEvent } from "./$types";
 
 export async function POST({
   request,
-  cookies,
   locals,
 }: RequestEvent): Promise<Response> {
   const session = await locals.getSession();
   if (!session?.user) {
-    return new Response(
-      JSON.stringify("you must be logged in to forward threads"),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 401,
-      }
-    );
+    return new (error as any)(401, "You must be logged in to add file");
   }
   // console.log(session);
-  const file_info = await request.json();
+  const thread_info = await request.json();
   // console.log("inside add key",key_info);
 
-  let given_src_userid=session.user.name;
-  let given_target_userid; 
-  let given_threadid = file_info.threadid;
+  let given_src_userid = session.user.name;
+  let given_target_userid;
+  let given_threadid = thread_info.threadid;
+
+  if (
+    given_src_userid === undefined ||
+    given_src_userid === null ||
+    given_threadid === undefined ||
+    given_threadid === null
+  ) {
+    console.log(
+      "ERROR @api/thread/forward:28: invalid user input error:\n",
+      thread_info
+    );
+    return new (error as any)(
+      422,
+      "Invalid inputs, while adding file signature."
+    );
+  }
+
   let { data: result1, error: _error1 } = await supabase.rpc(
     "get_thread_member_list",
     {
@@ -35,33 +44,25 @@ export async function POST({
   // console.log("add key rps result",result)
   if (_error1) {
     console.log(
-      "ERROR @api/thread/getmembers:33: supabase get thread user list error\n",
+      "ERROR @api/thread/forward:47: supabase get thread user list error\n",
       _error1
     );
-    return new Response(
-      JSON.stringify("internal server error while getting thread member list: " + _error1),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while forwarding thread."
     );
   }
-  console.log(result1);
-  for(let i=0;i<result1.length;i++)
-  {
-    if(result1[i].f_userid == given_src_userid )
-    {
-      if(i!=(result1.length-1))
-      {
-        given_target_userid=result1[i+1].f_userid;
+
+  // console.log(result1);
+  for (let i = 0; i < result1.length; i++) {
+    if (result1[i].f_userid == given_src_userid) {
+      if (i != result1.length - 1) {
+        given_target_userid = result1[i + 1].f_userid;
         break;
       }
     }
   }
-  console.log(given_target_userid);
-  console.log(given_src_userid);
+
   let { data: result, error: _error } = await supabase.rpc("forward_thread", {
     given_src_userid,
     given_target_userid,
@@ -71,19 +72,12 @@ export async function POST({
   // console.log("add key rps result",result)
   if (_error) {
     console.log(
-      "ERROR @api/thead/forward:35: supabase forward thread error\n",
+      "ERROR @api/thread/forward:75: supabase forward thread error\n",
       _error
     );
-    return new Response(
-      JSON.stringify(
-        "internal server error while forwarding thread: " + _error
-      ),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        status: 500,
-      }
+    return new (error as any)(
+      500,
+      "Internal Server Error, while forwarding thread."
     );
   }
 
