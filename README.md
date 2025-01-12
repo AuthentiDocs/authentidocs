@@ -329,7 +329,7 @@ We would like to specially give our heartfelt thanks to our honourable superviso
 
 We would also like to express our heartiest gratitude to our other sessional course teachers **[Rayhan Rashed sir](https://cse.buet.ac.bd/faculty_list/detail/rayhan)** and **[Mashiat Mustaq ma'am](https://cse.buet.ac.bd/faculty_list/detail/mashiat)** for the very important guidances and suggestions they gave us throughout the project.
 
-A special shoutout to **[Ashraf](https://github.com/risenfromashes), [Lord Sadat](https://github.com/Sadat-Hossain-01), [Shattik](https://github.com/shattik)** for helping us out anytime we needed. Check out **[Ashraf and company's project](https://github.com/risenfromashes/pixelshare), [Sadat and Asif's project](https://taskflow-2c96.onrender.com/)** and finally **[Shattik and Nafis and Wasif's project using microservices](https://github.com/Shattik/PushtiFrontEnd)**.
+A special shoutout to **[Ashraf](https://github.com/risenfromashes), [Lord Sadat](https://github.com/SadatHossain01), [Shattik](https://github.com/shattik)** for helping us out anytime we needed. Check out **[Ashraf and company's project](https://github.com/risenfromashes/pixelshare), [Sadat and Asif's project](https://taskflow-2c96.onrender.com/)** and finally **[Shattik and Nafis and Wasif's project using microservices](https://github.com/Shattik/PushtiFrontEnd)**.
 
 ## License
 
