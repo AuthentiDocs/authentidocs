@@ -129,7 +129,7 @@ After creating a project and connecting the github repo, **Vercel** will automat
 
 ## Demonstration
 
-Here is a little **[demo](https://authentidocs.vercel.app)** of the running project with some screenshots below:
+Here are some screenshots of the running project:
 
 <p align="center"> <h4 align="center"> Login, Sign Up and User Dashboard Pages </h4> </p>
 <p align ="center">
